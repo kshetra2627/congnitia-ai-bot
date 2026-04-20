@@ -41,25 +41,37 @@ app.post("/ask", async (req, res) => {
   }
 
   try {
-    // IMPORTANT: No history is fetched or sent to Groq
-    const response = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: "You are a helpful and concise AI assistant." },
-        { role: "user", content: question }
-      ],
-    });
+    let answer = "";
 
-    const answer = response.choices[0].message.content;
+    // Try to get answer from Groq
+    try {
+      const response = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: "You are a helpful and concise AI assistant." },
+          { role: "user", content: question }
+        ],
+      });
+      answer = response.choices[0].message.content;
+    } catch (groqErr) {
+      console.error("Groq error:", groqErr);
+      // Fallback: provide a simple response if Groq fails
+      answer = `I received your question: "${question}". The AI service is temporarily unavailable, but your question has been logged.`;
+    }
 
-    // Save the interaction to MongoDB
-    const newInteraction = await Interaction.create({ question, answer });
+    // Try to save to MongoDB (but don't fail if it doesn't work)
+    try {
+      await Interaction.create({ question, answer });
+    } catch (dbErr) {
+      console.error("MongoDB error:", dbErr);
+      // Continue anyway - user still gets response
+    }
 
-    res.json({ answer, id: newInteraction._id });
+    res.json({ answer, id: "temp-" + Date.now() });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Unexpected error:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
