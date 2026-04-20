@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "https://congnitia-ai-bot-2ucp-bjxjn01fa-kshetra-s-projects.vercel.app";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://congnitia-ai-bot-2ucp.vercel.app";
+console.log("Frontend using API_BASE:", API_BASE);
 
 function App() {
   const [input, setInput] = useState("");
@@ -41,7 +42,15 @@ function App() {
         body: JSON.stringify({ question: currentQuestion }),
       });
 
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status} ${res.statusText}`);
+      }
+
       const data = await res.json();
+      
+      if (!data.answer) {
+        throw new Error("No response from AI");
+      }
       
       const newInteraction = { 
         question: currentQuestion, 
@@ -52,6 +61,12 @@ function App() {
       setInteractions((prev) => [...prev, newInteraction]);
     } catch (err) {
       console.error("Interaction error:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const newInteraction = { 
+        question: currentQuestion, 
+        answer: `Error: ${errorMessage}` 
+      };
+      setInteractions((prev) => [...prev, newInteraction]);
     } finally {
       setIsLoading(false);
     }
