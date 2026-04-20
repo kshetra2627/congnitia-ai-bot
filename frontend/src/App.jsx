@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "https://congnitia-ai-bot-2ucp.vercel.app";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://congnitia-ai-bot-git-main-kshetra-s-projects.vercel.app";
 console.log("Frontend using API_BASE:", API_BASE);
 
 function App() {
