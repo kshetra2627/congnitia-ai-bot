@@ -27,6 +27,11 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
+// Root route
+app.get("/", (req, res) => {
+  res.json({ message: "Cognitia AI Backend is running" });
+});
+
 // Route: Single Question -> Single Response
 app.post("/ask", async (req, res) => {
   const { question } = req.body;
