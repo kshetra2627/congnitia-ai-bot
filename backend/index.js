@@ -13,19 +13,21 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.log(err));
 
-// Schema
-const QA = mongoose.model("QA", new mongoose.Schema({
-  question: String,
-  answer: String,
+// Schema - Stores single User question and AI response pair
+const InteractionSchema = new mongoose.Schema({
+  question: { type: String, required: true },
+  answer: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
-}));
+});
+
+const Interaction = mongoose.model("Interaction", InteractionSchema);
 
 // Groq setup
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-// Route
+// Route: Single Question -> Single Response
 app.post("/ask", async (req, res) => {
   const { question } = req.body;
 
@@ -34,16 +36,21 @@ app.post("/ask", async (req, res) => {
   }
 
   try {
+    // IMPORTANT: No history is fetched or sent to Groq
     const response = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
-      messages: [{ role: "user", content: question }],
+      messages: [
+        { role: "system", content: "You are a helpful and concise AI assistant." },
+        { role: "user", content: question }
+      ],
     });
 
     const answer = response.choices[0].message.content;
 
-    await QA.create({ question, answer });
+    // Save the interaction to MongoDB
+    const newInteraction = await Interaction.create({ question, answer });
 
-    res.json({ answer });
+    res.json({ answer, id: newInteraction._id });
 
   } catch (err) {
     console.error(err);
@@ -51,7 +58,27 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-// Start server
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+// Route to get history for the UI (Optional, but useful for viewing past work)
+app.get("/history", async (req, res) => {
+  try {
+    const history = await Interaction.find().sort({ createdAt: -1 });
+    res.json(history);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
+// Route to clear history
+app.delete("/history", async (req, res) => {
+  try {
+    await Interaction.deleteMany({});
+    res.json({ message: "History cleared" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to clear history" });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
