@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "https://congnitia-ai-bot-bnjy-r8n76xcjj-kshetra-s-projects.vercel.app";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://congnitia-ai-bot-2ucp-bjxjn01fa-kshetra-s-projects.vercel.app";
 
 function App() {
   const [input, setInput] = useState("");
