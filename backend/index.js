@@ -59,13 +59,11 @@ app.post("/ask", async (req, res) => {
       answer = `I received your question: "${question}". The AI service is temporarily unavailable, but your question has been logged.`;
     }
 
-    // Try to save to MongoDB (but don't fail if it doesn't work)
-    try {
-      await Interaction.create({ question, answer });
-    } catch (dbErr) {
-      console.error("MongoDB error:", dbErr);
-      // Continue anyway - user still gets response
-    }
+    // Save to MongoDB in the background (do not delay the response)
+    Interaction.create({ question, answer })
+      .catch((dbErr) => {
+        console.error("MongoDB error:", dbErr);
+      });
 
     res.json({ answer, id: "temp-" + Date.now() });
 
